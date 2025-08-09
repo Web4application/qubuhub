@@ -40,7 +40,7 @@ EXPOSE 4000
 CMD ["npm", "start"]
 EOL
 
-# Create docker-compose
+# Create docker-compose with internal bridge
 cat > docker-compose.yml <<'EOL'
 version: "3.9"
 
@@ -54,11 +54,13 @@ services:
     command: npm start
     depends_on:
       - gpt-pilot
+    environment:
+      GPT_PILOT_URL: "http://gpt-pilot:4000"
 
   gpt-pilot:
     build: ./gpt-pilot
-    ports:
-      - "4000:4000"
+    expose:
+      - "4000"
     volumes:
       - ./gpt-pilot:/app
     command: npm start
