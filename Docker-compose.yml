@@ -1,20 +1,57 @@
 version: "3.9"
 
 services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx_proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    depends_on:
+      - ai-webapp
+    restart: always
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot_renew
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h & wait $${!}; done;"
+    restart: always
+
   ai-webapp:
     build: ./AI-webapp
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     volumes:
       - ./AI-webapp:/app
     command: npm start
     depends_on:
       - gpt-pilot
+    environment:
+      GPT_PILOT_URL: "http://gpt-pilot:4000"
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   gpt-pilot:
     build: ./gpt-pilot
-    ports:
-      - "4000:4000"
+    expose:
+      - "4000"
     volumes:
       - ./gpt-pilot:/app
     command: npm start
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
