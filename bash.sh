@@ -52,6 +52,18 @@ npm install openai axios --no-audit --no-fund
 echo "🛠 Creating src/gpt5.js..."
 mkdir -p src
 
+# Clone the repository
+git clone https://github.com/Web4application/QUBUHUB.git
+cd QUBUHUB
+
+# Setup environment
+chmod +x setup.sh
+./setup.sh
+
+# Run containers
+docker-compose up --build
+
+
 cat > src/gpt5.js <<'JS'
 /**
  * GPT-5 integration route
