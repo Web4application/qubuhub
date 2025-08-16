@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>QUBUHUB Project</title>
+<style>
+  :root { --bg:#0d1117; --panel:#161b22; --card:#1f2430; --text:#e6edf3; --muted:#9da7b3; --brand:#ffd700; --link:#58a6ff; }
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; background:var(--bg); color:var(--text); }
+  header { padding:28px 16px; text-align:center; background:linear-gradient(135deg,#171b26,#2a2f45); }
+  h1 { margin:0; color:var(--brand); }
+  .wrap { max-width:1000px; margin:0 auto; padding:22px 16px; }
+  .topbar { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin:10px 0 18px; }
+  .btn { background:var(--brand); color:#111; border:none; padding:10px 14px; border-radius:8px; font-weight:800; text-decoration:none; }
+  .btn.outline { background:transparent; color:var(--link); border:1px solid var(--link); }
+  .panel { background:var(--panel); border:1px solid #2b3242; border-radius:12px; padding:18px; }
+  .grid { display:grid; grid-template-columns:1fr; gap:16px; }
+  .col { background:var(--card); border:1px solid #2b3242; border-radius:12px; padding:16px; }
+  h2 { margin:0 0 8px; color:var(--brand); }
+  .muted { color:var(--muted); }
+  .illu { width:100%; height:300px; background:#0f1421; border:1px dashed #2b3242; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#7f8aa1; }
+  .readme { background:#0f1421; padding:16px; border-radius:10px; overflow:auto; }
+  .readme h1, .readme h2, .readme h3 { color:#fff; }
+  .readme a { color:var(--link); }
+  footer { text-align:center; color:var(--muted); padding:28px 12px; background:#161b22; margin-top:28px; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">Loading…</h1>
+  <div class="topbar">
+    <a class="btn" href="https://nowpayments.io/donation/Web4" target="_blank" rel="noopener">Subscribe – $35/month</a>
+    <a class="btn outline" id="gh" target="_blank" rel="noopener">View on GitHub</a>
+    <a class="btn outline" href="index.html">Back to Hub</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="grid">
+    <div class="col">
+      <h2>Introduction</h2>
+      <p class="muted" id="desc">Fetching description…</p>
+    </div>
+
+    <div class="col">
+      <h2>Illustration</h2>
+      <div class="illu">Place your project diagram here (PNG/SVG)</div>
+    </div>
+
+    <div class="col">
+      <h2>Workflow Overview</h2>
+      <ol class="muted" id="workflow">
+        <li>Setup → Install → Configure</li>
+        <li>Connect → Run → Interact</li>
+        <li>Monitor → Update → Scale</li>
+      </ol>
+    </div>
+
+    <div class="col">
+      <h2>Documentation (README)</h2>
+      <div id="readme" class="readme">Loading README…</div>
+    </div>
+
+    <div class="col panel">
+      <h2>Unlock Software Access</h2>
+      <p class="muted">
+        Subscribe via NOWPayments for <b>$35/month</b>. After payment, email proof to
+        <b>Kubulee.kl@gmail.com</b>. We will verify and send your private download links.
+      </p>
+      <div class="topbar">
+        <a class="btn" href="https://nowpayments.io/donation/Web4" target="_blank" rel="noopener">Subscribe Now</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  © 2025 QUBUHUB • Web4Application
+</footer>
+
+<script>
+// Reads ?repo= from URL, fetches repo + README, renders page.
+(async function () {
+  const ORG = 'Web4application';
+  const params = new URLSearchParams(location.search);
+  const repo = params.get('repo');
+  const titleEl = document.getElementById('title');
+  const descEl = document.getElementById('desc');
+  const ghEl = document.getElementById('gh');
+  const readmeEl = document.getElementById('readme');
+
+  if (!repo) {
+    titleEl.textContent = 'Project not specified';
+    descEl.textContent = 'Add ?repo=<name> to the URL.';
+    readmeEl.textContent = '—';
+    return;
+  }
+
+  try {
+    // Repo metadata
+    const rRes = await fetch(`https://api.github.com/repos/${ORG}/${encodeURIComponent(repo)}`);
+    if (!rRes.ok) throw new Error('Repo not found');
+    const r = await rRes.json();
+
+    titleEl.textContent = r.name;
+    descEl.textContent = r.description || 'No description provided yet.';
+    ghEl.href = r.html_url;
+
+    // README (HTML-rendered by GitHub API)
+    // Prefer the rendered HTML API for better visuals (rate-limited but fine for public use).
+    const rdRes = await fetch(`https://api.github.com/repos/${ORG}/${encodeURIComponent(repo)}/readme`, {
+      headers: { 'Accept': 'application/vnd.github.html+json' }
+    });
+    if (rdRes.ok) {
+      const html = await rdRes.text();
+      readmeEl.innerHTML = html;
+      // Rewrite relative links to absolute
+      const base = r.html_url.replace(/\/$/, '');
+      readmeEl.querySelectorAll('a').forEach(a=>{
+        const href = a.getAttribute('href') || '';
+        if (href && !href.startsWith('http') && !href.startsWith('#')) {
+          a.href = base + '/' + href.replace(/^\.\//,'');
+        }
+      });
+      readmeEl.querySelectorAll('img').forEach(img=>{
+        const src = img.getAttribute('src') || '';
+        if (src && !src.startsWith('http') && !src.startsWith('data:')) {
+          img.src = `${r.html_url}/raw/HEAD/${src.replace(/^\.\//,'')}`;
+        }
+        img.style.maxWidth = '100%';
+      });
+    } else {
+      readmeEl.textContent = 'README not available.';
+    }
+  } catch (e) {
+    titleEl.textContent = 'Error loading project';
+    descEl.textContent = e.message || 'Unknown error.';
+    readmeEl.textContent = '—';
+    console.error(e);
+  }
+})();
+</script>
+</body>
+</html>
